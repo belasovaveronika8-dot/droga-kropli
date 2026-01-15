@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#e9f5ff" />
+  <title>Droga kropli — Poprowadź kroplę</title>
+
+  <style>
+    :root{
+      /* Jasny motyw */
+      --bg:#eef6ff;
+      --bg2:#f8fbff;
+      --card:#ffffff;
+      --line:#cfe0f2;
+      --text:#0f172a;
+      --muted:#4b5563;
+
+      --accent:#0ea5a4;
+      --accent2:#0284c7;
+
+      --bad:#e11d48;
+
+      /* Mobile-first spacing */
+      --r:18px;
+      --shadow: 0 10px 30px rgba(2, 132, 199, .10);
+    }
+
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 20% 10%, rgba(2,132,199,.18), transparent 60%),
+        radial-gradient(900px 600px at 80% 80%, rgba(14,165,164,.18), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      -webkit-font-smoothing: antialiased;
+      display:flex;
+    }
+
+    .wrap{
+      margin:auto;
+      width:min(980px, 94vw);
+      padding:
+        calc(12px + env(safe-area-inset-top))
+        0
+        calc(14px + env(safe-area-inset-bottom))
+        0;
+    }
+
+    .header{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:flex-end;
+      justify-content:space-between;
+      margin-bottom:12px;
+    }
+
+    .brand{ display:flex; flex-direction:column; gap:6px; }
+    .brand h1{
+      margin:0;
+      font-size: clamp(18px, 3.8vw, 24px);
+      letter-spacing:.2px;
+    }
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size: clamp(12px, 2.8vw, 14px);
+      line-height:1.35;
+      max-width: 60ch;
+    }
+
+    .panel{
+      background:rgba(255,255,255,.82);
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      padding:12px;
+      box-shadow: var(--shadow);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      backdrop-filter: blur(6px);
+    }
+
+    .stats{ display:flex; gap:10px; flex-wrap:wrap; }
+    .pill{
+      background:rgba(238,246,255,.9);
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:9px 12px;
+      font-size: 14px;
+    }
+    .pill b{ font-variant-numeric:tabular-nums; }
+
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    button{
+      border:none;
+      border-radius: 14px;
+      padding:12px 14px;
+      font-weight:800;
+      cursor:pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#ffffff;
+      box-shadow: 0 10px 20px rgba(2,132,199,.14);
+      touch-action: manipulation;
+      font-size: 15px;
+    }
+    button.secondary{
+      background: #ffffff;
+      color: var(--text);
+      border:1px solid var(--line);
+      box-shadow:none;
+      font-weight:700;
+    }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .game{
+      margin-top:12px;
+
+      /* Mobile-first: высота под телефон, без “огромного” блока */
+      height: min(64vh, 540px);
+      min-height: 420px;
+
+      border-radius: calc(var(--r) + 2px);
+      border:1px solid var(--line);
+      position:relative;
+      overflow:hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.78)),
+        radial-gradient(1200px 600px at 15% 10%, rgba(2,132,199,.16), transparent 60%),
+        radial-gradient(900px 600px at 85% 80%, rgba(14,165,164,.14), transparent 55%);
+      box-shadow: var(--shadow);
+
+      /* Критично для перетаскивания пальцем */
+      touch-action: none;
+    }
+
+    /* Дорожка-коридор */
+    .path{
+      position:absolute;
+      inset:16px;
+      border-radius: var(--r);
+      background:
+        linear-gradient(90deg, rgba(2,132,199,.10), rgba(14,165,164,.06)),
+        rgba(255,255,255,.55);
+      border:1px dashed rgba(2,132,199,.28);
+    }
+    .path::before{
+      content:"";
+      position:absolute;
+      inset:12px;
+      border-radius: calc(var(--r) - 2px);
+      border:2px solid rgba(14,165,164,.18);
+    }
+
+    /* Этапы */
+    .stage{
+      position:absolute;
+      width:86px;
+      height:86px;
+      border-radius:18px;
+      background: rgba(255,255,255,.88);
+      border:1px solid rgba(2,132,199,.20);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:6px;
+      text-align:center;
+      padding:8px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 18px rgba(2,132,199,.08);
+      user-select:none;
+    }
+    .stage .ico{ font-size:22px; }
+    .stage .lbl{
+      font-size: 11px;
+      color: var(--muted);
+      line-height:1.1;
+    }
+    .stage.active{
+      outline: 3px solid rgba(14,165,164,.40);
+      border-color: rgba(14,165,164,.45);
+    }
+
+    /* Капля */
+    .drop{
+      position:absolute;
+      width:46px;
+      height:46px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,0) 55%),
+        radial-gradient(circle at 50% 60%, rgba(14,165,164,.95), rgba(14,165,164,.28) 60%),
+        rgba(14,165,164,.40);
+      border: 1px solid rgba(2,132,199,.22);
+      box-shadow: 0 14px 30px rgba(14,165,164,.18);
+      transform: translate(-50%, -50%);
+      user-select:none;
+    }
+    .drop::after{
+      content:"";
+      position:absolute;
+      left:50%;
+      top:7px;
+      width:14px;
+      height:14px;
+      transform:translateX(-50%) rotate(45deg);
+      background: rgba(255,255,255,.30);
+      border-radius:4px;
+      filter: blur(.2px);
+    }
+
+    /* Toast */
+    .toast{
+      position:absolute;
+      top:14px;
+      left:50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,.92);
+      border:1px solid rgba(2,132,199,.20);
+      padding:9px 12px;
+      border-radius: 999px;
+      color: var(--text);
+      font-size: 13px;
+      box-shadow: 0 10px 22px rgba(2,132,199,.10);
+      display:none;
+      max-width: calc(100% - 28px);
+      text-align:center;
+    }
+    .toast.show{ display:block; }
+
+    /* Modal (bottom sheet) */
+    .modal{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      background: rgba(15, 23, 42, .25);
+      padding: 14px;
+    }
+    .modal.show{ display:flex; }
+    .sheet{
+      width:min(720px, 100%);
+      background: rgba(255,255,255,.96);
+      border:1px solid rgba(2,132,199,.22);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 18px 40px rgba(2,132,199,.18);
+    }
+    .sheet h2{
+      margin:0 0 8px 0;
+      font-size: 16px;
+    }
+    .sheet p{
+      margin:0 0 12px 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height:1.35;
+    }
+    .answers{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .ans{
+      background: rgba(238,246,255,.85);
+      border:1px solid rgba(2,132,199,.20);
+      border-radius: 14px;
+      padding: 12px;
+      color: var(--text);
+      text-align:left;
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      font-size: 15px;
+      line-height:1.2;
+    }
+    .ans small{ color: var(--muted); white-space:nowrap; }
+    .ans.good{ border-color: rgba(14,165,164,.55); }
+    .ans.bad{ border-color: rgba(225,29,72,.45); }
+
+    .footerNote{
+      margin-top:10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* Чуть плотнее на очень маленьких экранах */
+    @media (max-width: 380px){
+      .stage{ width:78px; height:78px; }
+      .stage .lbl{ font-size: 10px; }
+      .pill{ font-size: 13px; }
+      button{ font-size: 14px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="brand">
+        <h1>Droga kropli — Poprowadź kroplę</h1>
+        <p>60 sekund: prowadź kroplę do podświetlonych etapów i wybieraj działania, które oszczędzają wodę.</p>
+      </div>
+      <div class="btns">
+        <button id="startBtn">Start</button>
+        <button id="resetBtn" class="secondary" disabled>Od nowa</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="stats">
+        <div class="pill"⏱️ Czas: <b id="time">60</b> s</div>
+        <div class="pill">💧 Punkty: <b id="score">0</b></div>
+        <div class="pill">🏁 Etap: <b id="stageName">—</b></div>
+      </div>
+      <div class="pill">Wskazówka: prowadź kroplę do podświetlonego etapu</div>
+    </div>
+
+    <div class="game" id="game">
+      <div class="path"></div>
+
+      <!-- Etapy -->
+      <div class="stage" data-i="0" style="left:10%; top:18%;">
+        <div class="ico">☁️</div><div class="lbl">Chmura</div>
+      </div>
+      <div class="stage" data-i="1" style="left:35%; top:30%;">
+        <div class="ico">🌧️</div><div class="lbl">Deszcz</div>
+      </div>
+      <div class="stage" data-i="2" style="left:58%; top:20%;">
+        <div class="ico">🏞️</div><div class="lbl">Rzeka</div>
+      </div>
+      <div class="stage" data-i="3" style="left:72%; top:48%;">
+        <div class="ico">🏠</div><div class="lbl">Dom</div>
+      </div>
+      <div class="stage" data-i="4" style="left:45%; top:58%;">
+        <div class="ico">🧪</div><div class="lbl">Oczyszczanie</div>
+      </div>
+      <div class="stage" data-i="5" style="left:18%; top:62%;">
+        <div class="ico">🌿</div><div class="lbl">Natura</div>
+      </div>
+
+      <div class="drop" id="drop" aria-label="Kropla"></div>
+
+      <div class="toast" id="toast"></div>
+
+      <div class="modal" id="modal">
+        <div class="sheet">
+          <h2 id="qTitle">Pytanie</h2>
+          <p id="qText">...</p>
+          <div class="answers" id="answers"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footerNote">
+      To jest jedna strona (jeden plik). Po publikacji link można wkleić do generatora QR.
+    </div>
+  </div>
+
+<script>
+(() => {
+  // Ustawienia gry
+  const GAME_SECONDS = 60;
+  const HIT_RADIUS_PX = 58;     // łatwiej trafić palcem na telefonie
+  const LITERS_PER_POINT = 1.5; // “wirtualne litry” za 1 punkt
+
+  // Treści (PL)
+  const stages = [
+    {
+      name: "Chmura",
+      question: "Woda paruje i wraca do atmosfery. Który nawyk w domu najlepiej oszczędza wodę?",
+      answers: [
+        { t:"Zakręcać kran podczas mycia zębów", ok:true, pts:10, fact:"To prosty nawyk, który realnie zmniejsza zużycie wody." },
+        { t:"Trzymać wodę odkręconą cały czas", ok:false, pts:-5, fact:"Nawet krótkie minuty zsumowane dają duży pobór wody." }
+      ]
+    },
+    {
+      name: "Deszcz",
+      question: "Kiedy najlepiej podlewać rośliny, żeby mniej wody wyparowało?",
+      answers: [
+        { t:"Rano lub wieczorem", ok:true, pts:10, fact:"W chłodniejszych porach dnia parowanie jest mniejsze." },
+        { t:"W południe, w pełnym słońcu", ok:false, pts:-5, fact:"W upale dużo wody ucieka przez parowanie." }
+      ]
+    },
+    {
+      name: "Rzeka",
+      question: "Co zrobić, żeby nie zanieczyszczać wód?",
+      answers: [
+        { t:"Nie wylewać chemii/oleju do odpływu", ok:true, pts:10, fact:"Zanieczyszczenia trafiają do rzek i utrudniają oczyszczanie." },
+        { t:"„Wszystko do kanalizacji”", ok:false, pts:-10, fact:"Części zanieczyszczeń nie da się łatwo usunąć w oczyszczalni." }
+      ]
+    },
+    {
+      name: "Dom",
+      question: "Kran kapie. Co jest najlepszym rozwiązaniem?",
+      answers: [
+        { t:"Naprawić lub dokręcić uszczelkę", ok:true, pts:10, fact:"Nieszczelności to jedna z najczęstszych strat wody." },
+        { t:"Zostawić „bo tylko kapie”", ok:false, pts:-5, fact:"Krople szybko zamieniają się w litry — zwłaszcza przez noc." }
+      ]
+    },
+    {
+      name: "Oczyszczanie",
+      question: "Jak myć naczynia, żeby zużywać mniej wody?",
+      answers: [
+        { t:"Zamykać kran / użyć miski z wodą", ok:true, pts:10, fact:"Woda jest wykorzystywana efektywniej niż przy stałym strumieniu." },
+        { t:"Myć cały czas pod silnym strumieniem", ok:false, pts:-5, fact:"Wiele wody spływa bez realnej potrzeby." }
+      ]
+    },
+    {
+      name: "Natura",
+      question: "Finał: jak chronić wodę w przyrodzie?",
+      answers: [
+        { t:"Nie zostawiać śmieci i dbać o czystość", ok:true, pts:10, fact:"Czysta woda to zdrowie ekosystemów i ludzi." },
+        { t:"„To nie ma znaczenia”", ok:false, pts:-10, fact:"Zanieczyszczenia wracają do nas w obiegu wody." }
+      ]
+    }
+  ];
+
+  // DOM
+  const gameEl = document.getElementById("game");
+  const dropEl = document.getElementById("drop");
+  const startBtn = document.getElementById("startBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const timeEl = document.getElementById("time");
+  const scoreEl = document.getElementById("score");
+  const stageNameEl = document.getElementById("stageName");
+  const modalEl = document.getElementById("modal");
+  const qTitleEl = document.getElementById("qTitle");
+  const qTextEl = document.getElementById("qText");
+  const answersEl = document.getElementById("answers");
+  const toastEl = document.getElementById("toast");
+  const stageEls = Array.from(document.querySelectorAll(".stage"));
+
+  // State
+  let running = false;
+  let t = GAME_SECONDS;
+  let score = 0;
+  let currentStage = 0;
+  let timerId = null;
+  let dragging = false;
+
+  // Start position
+  function placeDropStart() {
+    const rect = gameEl.getBoundingClientRect();
+    setDropPos(rect.left + rect.width * 0.12, rect.top + rect.height * 0.18);
+  }
+
+  // Clamp inside game
+  function setDropPos(clientX, clientY) {
+    const rect = gameEl.getBoundingClientRect();
+    const pad = 18;
+    const x = Math.max(rect.left + pad, Math.min(clientX, rect.right - pad));
+    const y = Math.max(rect.top + pad, Math.min(clientY, rect.bottom - pad));
+    dropEl.style.left = (x - rect.left) + "px";
+    dropEl.style.top  = (y - rect.top) + "px";
+  }
+
+  function getDropPosPx() {
+    return { x: parseFloat(dropEl.style.left || "0"), y: parseFloat(dropEl.style.top || "0") };
+  }
+
+  function getStageCenterPx(i) {
+    const s = stageEls[i];
+    const r = s.getBoundingClientRect();
+    const gr = gameEl.getBoundingClientRect();
+    return { x: (r.left + r.width/2) - gr.left, y: (r.top + r.height/2) - gr.top };
+  }
+
+  function dist(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy); }
+
+  function setActiveStage(i) {
+    stageEls.forEach(el => el.classList.remove("active"));
+    stageEls[i].classList.add("active");
+    stageNameEl.textContent = stages[i].name;
+  }
+
+  function showToast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add("show");
+    clearTimeout(showToast._id);
+    showToast._id = setTimeout(() => toastEl.classList.remove("show"), 1400);
+  }
+
+  function openQuestion(i) {
+    const st = stages[i];
+    qTitleEl.textContent = "Etap: " + st.name;
+    qTextEl.textContent = st.question;
+    answersEl.innerHTML = "";
+
+    st.answers.forEach((a) => {
+      const btn = document.createElement("button");
+      btn.className = "ans";
+      btn.type = "button";
+      btn.innerHTML = `<span>${a.ok ? "✅ " : "❌ "}${a.t}</span><small>${a.pts > 0 ? "+" : ""}${a.pts} pkt</small>`;
+      btn.addEventListener("click", () => {
+        score += a.pts;
+        if (score < 0) score = 0;
+        scoreEl.textContent = score;
+
+        showToast((a.pts>=0 ? "+" : "") + a.pts + " pkt — " + a.fact);
+
+        modalEl.classList.remove("show");
+
+        // Przejście dalej
+        if (i < stages.length - 1) {
+          currentStage = i + 1;
+          setActiveStage(currentStage);
+        } else {
+          endGame();
+        }
+      });
+      answersEl.appendChild(btn);
+    });
+
+    modalEl.classList.add("show");
+  }
+
+  function tick() {
+    t -= 1;
+    timeEl.textContent = t;
+    if (t <= 0) endGame();
+  }
+
+  function startGame() {
+    if (running) return;
+    running = true;
+    t = GAME_SECONDS;
+    score = 0;
+    currentStage = 0;
+
+    timeEl.textContent = t;
+    scoreEl.textContent = score;
+    setActiveStage(currentStage);
+
+    resetBtn.disabled = false;
+    startBtn.disabled = true;
+
+    placeDropStart();
+    timerId = setInterval(tick, 1000);
+
+    showToast("Start! Poprowadź kroplę do etapu ☁️");
+  }
+
+  function endGame() {
+    if (!running) return;
+    running = false;
+    clearInterval(timerId);
+    timerId = null;
+
+    startBtn.disabled = false;
+
+    const liters = Math.round(score * LITERS_PER_POINT);
+
+    qTitleEl.textContent = "Wynik";
+    qTextEl.textContent =
+      `Zdobywasz ${score} punktów i „oszczędzasz” około ${liters} wirtualnych litrów. ` +
+      `Najważniejsze są nawyki: zakręcaj kran, naprawiaj przecieki, podlewaj rano lub wieczorem.`;
+
+    answersEl.innerHTML = "";
+
+    const again = document.createElement("button");
+    again.className = "ans good";
+    again.type = "button";
+    again.textContent = "Zagraj ponownie";
+    again.addEventListener("click", () => {
+      modalEl.classList.remove("show");
+      startGame();
+    });
+
+    const tips = document.createElement("div");
+    tips.style.marginTop = "10px";
+    tips.style.color = "var(--muted)";
+    tips.style.fontSize = "13px";
+    tips.innerHTML = `
+      <b style="color:var(--text)">3 szybkie wskazówki:</b>
+      <ul style="margin:8px 0 0 18px; padding:0">
+        <li>Zakręcaj kran, gdy woda nie jest potrzebna.</li>
+        <li>Sprawdzaj przecieki — „kapanie” to realne straty.</li>
+        <li>Nie wylewaj oleju i chemii do odpływu.</li>
+      </ul>
+    `;
+
+    answersEl.appendChild(again);
+    answersEl.appendChild(tips);
+    modalEl.classList.add("show");
+  }
+
+  function resetGame() {
+    running = false;
+    clearInterval(timerId);
+    timerId = null;
+
+    t = GAME_SECONDS;
+    score = 0;
+    currentStage = 0;
+
+    timeEl.textContent = t;
+    scoreEl.textContent = score;
+    stageNameEl.textContent = "—";
+
+    stageEls.forEach(el => el.classList.remove("active"));
+
+    startBtn.disabled = false;
+    resetBtn.disabled = true;
+
+    modalEl.classList.remove("show");
+    placeDropStart();
+
+    showToast("Zresetowano. Naciśnij „Start”.");
+  }
+
+  // Hit test
+  function checkStageHit() {
+    if (!running) return;
+    if (modalEl.classList.contains("show")) return;
+
+    const drop = getDropPosPx();
+    const target = getStageCenterPx(currentStage);
+
+    if (dist(drop, target) <= HIT_RADIUS_PX) {
+      openQuestion(currentStage);
+    }
+  }
+
+  // Pointer (touch/mouse)
+  function pointerDown(e){
+    if (!running) return;
+    if (modalEl.classList.contains("show")) return;
+    dragging = true;
+    gameEl.setPointerCapture?.(e.pointerId);
+    setDropPos(e.clientX, e.clientY);
+    checkStageHit();
+  }
+  function pointerMove(e){
+    if (!dragging) return;
+    setDropPos(e.clientX, e.clientY);
+    checkStageHit();
+  }
+  function pointerUp(){
+    dragging = false;
+  }
+
+  // Events
+  startBtn.addEventListener("click", startGame);
+  resetBtn.addEventListener("click", resetGame);
+
+  gameEl.addEventListener("pointerdown", pointerDown);
+  gameEl.addEventListener("pointermove", pointerMove);
+  window.addEventListener("pointerup", pointerUp);
+
+  // init
+  placeDropStart();
+})();
+</script>
+</body>
+</html>
